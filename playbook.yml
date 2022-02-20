@@ -1,0 +1,46 @@
+---
+- name: Install and boot Docker
+  hosts: app
+  become: yes
+  
+  tasks:
+   - name: Install docker on ubuntu
+     ansible.builtin.apt:
+        name: docker
+        state: present
+     when: {{ ansible_hostname | regex_search('ubuntu*', multiline=True, ignorecase=True) }} 
+     
+   - name: Install docker on centos
+     ansible.builtin.yum:
+        name: docker
+        state: present
+     when: {{ ansible_hostname | regex_search('centos*', multiline=True, ignorecase=True) }} 
+  
+   - name: Run docker
+     ansible.builtin.command: docker
+     
+- name: Install and boot Postgre
+  hosts: database
+  become: yes
+  
+  tasks:
+   - name: Install postgre on ubuntu
+     ansible.builtin.apt:
+        name: postgresql<={{postgre_version}}
+        state: present
+     when: {{ ansible_hostname | regex_search('ubuntu*', multiline=True, ignorecase=True) }} 
+     
+   - name: Install postgre on centos
+     ansible.builtin.yum:
+        name: postgresql<={{postgre_version}}
+        state: present
+     when: {{ ansible_hostname | regex_search('centos*', multiline=True, ignorecase=True) }} 
+     
+   - name: Edit config
+     ansible.builtin.template:
+        src: ./postgres.conf.j2
+        dest: ~/
+        mode: '0600'
+        
+   - name: start postgre
+     command: "/bin/postgres --config-file="~/postgres.conf""
